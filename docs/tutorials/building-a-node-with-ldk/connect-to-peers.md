@@ -6,7 +6,7 @@ Firstly we need to have the ability to do high performance I/O operations. LDK p
 
 **What it's used for**: making peer connections, facilitating peer data to and from LDK
 
-<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin'}">
+<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin', swift:'Swift'}">
   <template v-slot:rust> 
 
 ```rust
@@ -40,12 +40,23 @@ nioPeerHandler.bind_listener(InetSocketAddress("127.0.0.1", port))
 ```
 
   </template>
+
+  <template v-slot:swift>
+
+```Swift
+let peerHandler = channelManagerConstructor.getTCPPeerHandler()
+let port = 9777
+peerHandler.bind(address: "127.0.0.1", port: port)
+```
+
+  </template>
+
 </CodeSwitcher>
 
 
 Connections to other peers are established with `PeerManager`. You'll need to know the pubkey and address of another node that you want as a peer. Once the connection is established and the handshake is complete, `PeerManager` will show the peer's pubkey in its list of peers.
 
-<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin'}">
+<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin', swift:'Swift'}">
   <template v-slot:rust> 
 
 ```rust
@@ -92,6 +103,23 @@ try {
 ```
 
   </template>
+
+  <template v-slot:swift>
+ 
+```Swift
+// Connect and wait for the handshake to complete.
+let pubKey = // Insert code to retrieve peer's pubKey as byte array
+let address = // Insert code to retrieve peer's address
+let port = // Insert code to retrieve peer's port
+let _ = peerHandler.connect(address: address, port: port, theirNodeId: pubKey)
+
+// The peer's pubkey will be present in the list of peer ids.
+let peerManager: PeerManager = channelManagerConstructor.peerManager
+let peerNodeIds = peerManager.getPeerNodeIds()
+```
+
+  </template>
+  
 </CodeSwitcher>
 
 **Dependencies:** `PeerManager`

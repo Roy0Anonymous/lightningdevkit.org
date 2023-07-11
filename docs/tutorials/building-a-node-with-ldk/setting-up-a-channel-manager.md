@@ -6,7 +6,7 @@ The ChannelManager is responsible for several tasks related to managing channel 
 
 To add a `ChannelManager` to your application, run:
 
-<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin'}">
+<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin', swift:'Swift'}">
   <template v-slot:rust>
 
   ```rust
@@ -44,6 +44,36 @@ To add a `ChannelManager` to your application, run:
   ```
 
   </template>
+
+  <template v-slot:swift>
+ 
+  ```Swift
+  import LightningDevKit
+
+  let channelManagerConstructionParameters = ChannelManagerConstructionParameters(
+      config: userConfig,
+      entropySource: keysManager.asEntropySource(), 
+      nodeSigner: keysManager.asNodeSigner(), 
+      signerProvider: keysManager.asSignerProvider(), 
+      feeEstimator: feeEstimator, 
+      chainMonitor: chainMonitor, 
+      txBroadcaster: broadcaster, 
+      logger: logger, 
+      enableP2PGossip: true, 
+      scorer: scorer
+  )
+
+  let channelManagerConstructor = ChannelManagerConstructor(
+      network: network, 
+      currentBlockchainTipHash: latestBlockHash, 
+      currentBlockchainTipHeight: latestBlockHeight, 
+      netGraph: netGraph, 
+      params: channelManagerConstructionParameters
+  )
+  ```
+
+  </template>
+
 </CodeSwitcher>
 
 There are a few dependencies needed to get this working. Let's walk through setting up each one so we can plug them into our `ChannelManager`.
@@ -52,7 +82,7 @@ There are a few dependencies needed to get this working. Let's walk through sett
 
 **What it's used for:** estimating fees for on-chain transactions that LDK wants broadcasted.
 
-<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin'}">
+<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin', swift:'Swift'}">
   <template v-slot:rust>
  
   ```rust
@@ -99,6 +129,28 @@ val feeEstimator: FeeEstimator = FeeEstimator.new_impl(YourFeeEstimator)
 ```
 
   </template>
+
+  <template v-slot:swift>
+ 
+  ```Swift
+  class MyFeeEstimator: FeeEstimator {
+    override func getEstSatPer1000Weight(confirmationTarget: Bindings.ConfirmationTarget) -> UInt32 {
+        if confirmationTarget == .Background {
+            // Fetch Background Feerate
+        } else if confirmationTarget == .Normal {
+            // Fetch Normal Feerate (~6 blocks)
+        } else if confirmationTarget == .HighPriority {
+            // Fetch High Feerate
+        }
+        // Fetch Default Feerate
+    }
+}
+
+let feeEstimator = MyFeeEstimator()
+```
+
+  </template>
+
 </CodeSwitcher>
 
 **Implementation notes:**
@@ -114,7 +166,7 @@ retrieving fresh ones every time
 ### Initialize the `Logger`
 **What it's used for:** LDK logging
 
-<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin'}">
+<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin', swift:'Swift'}">
   <template v-slot:rust>
  
   ```rust
@@ -153,6 +205,21 @@ retrieving fresh ones every time
   ```
 
   </template>
+
+  <template v-slot:swift>
+ 
+  ```Swift
+  class MyLogger: Logger {
+    override func log(record: Bindings.Record) {
+        // Print and/or write the log to a file
+    }
+  }
+
+  let logger = MyLogger()
+  ```
+
+  </template>
+
 </CodeSwitcher>
 
 **Implementation notes:** you'll likely want to write the logs to a file for debugging purposes.
@@ -164,7 +231,7 @@ retrieving fresh ones every time
 ### Initialize the `BroadcasterInterface`
 **What it's used for:** broadcasting various transactions to the bitcoin network
 
-<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin'}">
+<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin', swift:'Swift'}">
   <template v-slot:rust>
  
   ```rust
@@ -194,6 +261,21 @@ retrieving fresh ones every time
   ```
 
   </template>
+
+  <template v-slot:swift>
+ 
+  ```Swift
+  class MyBroacaster: BroadcasterInterface {
+    override func broadcastTransaction(tx: [UInt8]) {
+        // Insert code to broadcast the given transaction
+    }
+  }
+
+  let broadcaster = MyBroacaster()
+  ```
+
+  </template>
+
 </CodeSwitcher>
 
 **Dependencies:** *none*
@@ -203,7 +285,7 @@ retrieving fresh ones every time
 ### Initialize `Persist`
 **What it's used for:** persisting `ChannelMonitor`s, which contain crucial channel data, in a timely manner
 
-<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin'}">
+<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin', swift:'Swift'}">
   <template v-slot:rust>
 
   ```rust
@@ -258,6 +340,25 @@ retrieving fresh ones every time
   ```
 
   </template>
+
+  <template v-slot:swift>
+
+  ```Swift
+  class MyPersister: Persist {
+      override func persistNewChannel(channelId: OutPoint, data: ChannelMonitor, updateId: MonitorUpdateId) -> Bindings.ChannelMonitorUpdateStatus {
+          // Insert the code to persist the ChannelMonitor to disk
+      }
+      
+      override func updatePersistedChannel(channelId: OutPoint, update: ChannelMonitorUpdate, data: ChannelMonitor, updateId: MonitorUpdateId) -> ChannelMonitorUpdateStatus {
+          // Insert the code to persist either ChannelMonitor or ChannelMonitorUpdate to disk
+      }
+  }
+
+  let persister = MyPersister()
+  ```
+
+  </template>
+
 </CodeSwitcher>
 
 <CodeSwitcher :languages="{rust:'Using LDK Sample Filesystem Persistence Module in Rust'}">
@@ -294,7 +395,7 @@ object to tell you what transactions and outputs to watch for on-chain. You'll
 inform LDK about these transactions/outputs in Step 14.
 
 
-<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin'}">
+<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin', swift:'Swift'}">
   <template v-slot:rust>
 
   ```rust
@@ -333,6 +434,24 @@ inform LDK about these transactions/outputs in Step 14.
   val txFilter: Filter = Filter.new_impl(YourTxFilter)
   ```
   </template>
+
+  <template v-slot:swift>
+
+  ```Swift
+  class MyFilter: Filter {
+      override func registerTx(txid: [UInt8]?, scriptPubkey: [UInt8]) {
+          // Insert code to watch this transaction
+      }
+
+      override func registerOutput(output: Bindings.WatchedOutput) {
+          // Insert code to watch for any transaction that spend this output
+      }
+  }
+
+  let filter = MyFilter()
+  ```
+  </template>
+
 </CodeSwitcher>
 
 **Implementation notes:** see the [Blockchain Data](/blockchain_data/introduction.md) guide for more info
@@ -344,7 +463,7 @@ inform LDK about these transactions/outputs in Step 14.
 ### Initialize the `ChainMonitor`
 **What it's used for:** tracking one or more `ChannelMonitor`s and using them to monitor the chain for lighting transactions that are relevant to our node, and broadcasting transactions if need be.
 
-<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin'}">
+<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin', swift:'Swift'}">
   <template v-slot:rust>
 
   ```rust
@@ -362,6 +481,22 @@ inform LDK about these transactions/outputs in Step 14.
   val chainMonitor = ChainMonitor.of(filter, txBroadcaster, logger, feeEstimator, persister)
   ```
   </template>
+
+  <template v-slot:swift>
+
+  ```Swift
+  let filter: Filter = // leave this as `nil` or insert the Filter object.
+
+  let chainMonitor = ChainMonitor(
+    chainSource: filter, 
+    broadcaster: broadcaster, 
+    logger: logger, 
+    feeest: feeEstimator, 
+    persister: persister
+  )
+  ```
+  </template>
+
 </CodeSwitcher>
 
 **Implementation notes:** `Filter` must be non-`None` if you're using Electrum or BIP 157/158 as your chain backend
@@ -375,7 +510,7 @@ inform LDK about these transactions/outputs in Step 14.
 ### Initialize the `KeysManager`
 **What it's used for:** providing keys for signing Lightning transactions
 
-<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin'}">
+<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin', swift:'Swift'}">
   <template v-slot:rust>
 
   ```rust
@@ -427,6 +562,17 @@ inform LDK about these transactions/outputs in Step 14.
     )
   ```
   </template>
+
+  <template v-slot:swift>
+
+  ```Swift
+  let seed = // Insert code to create seed with random bytes or if restarting, reload the seed from disk
+  let timestampSeconds = UInt64(NSDate().timeIntervalSince1970)
+  let timestampNanos = UInt32.init(truncating: NSNumber(value: timestampSeconds * 1000 * 1000))
+  let keysManager = KeysManager(seed: seed, startingTimeSecs: timestampSeconds, startingTimeNanos: timestampNanos)
+  ```
+  </template>
+
 </CodeSwitcher>
 
 **Implementation notes:**
@@ -447,7 +593,7 @@ generation is unique across restarts.
 
 **What it's used for:** if LDK is restarting and has at least 1 channel, its `ChannelMonitor`s will need to be (1) fed to the `ChannelManager` and (2) synced to chain.
 
-<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin'}">
+<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin', swift:'Swift'}">
   <template v-slot:rust>
 
   ```rust
@@ -479,6 +625,21 @@ generation is unique across restarts.
   channelMonitors = channelMonitorList.toTypedArray();
   ```
   </template>
+
+  <template v-slot:swift>
+
+  ```Swift
+  // Initialize the array where we'll store the `ChannelMonitor`s read from disk.
+  // This array will later be given to the `ChannelManagerConstructor` on initialization.
+  var serializedChannelMonitors: [[UInt8]] = []
+  let allChannels = // Insert code to get a list of persisted channels
+  for channel in allChannels {
+      let channelData = try Data(contentsOf: channel)
+      let channelBytes = [UInt8](channelData)
+      serializedChannelMonitors.append(channelBytes)
+  }
+  ```
+  </template>
 </CodeSwitcher>
 
 **Dependencies:** `KeysManager`
@@ -488,7 +649,7 @@ generation is unique across restarts.
 ### Initialize the `ChannelManager`
 **What it's used for:** managing channel state
 
-<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin'}">
+<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin', swift:'Swift'}">
   <template v-slot:rust>
 
   ```rust
@@ -574,6 +735,30 @@ generation is unique across restarts.
       }
   ```
   </template>
+
+<template v-slot:swift>
+
+  ```Swift
+  if !serializedChannelManager.isEmpty {
+      channelManagerConstructor = try ChannelManagerConstructor(
+        channelManagerSerialized: serializedChannelManager, 
+        channelMonitorsSerialized: serializedChannelMonitors, 
+        networkGraph: NetworkGraphArgument.instance(netGraph), 
+        filter: filter, 
+        params: channelManagerConstructionParameters
+    )
+  } else {
+    channelManagerConstructor = ChannelManagerConstructor(
+        network: network, 
+        currentBlockchainTipHash: latestBlockHash, 
+        currentBlockchainTipHeight: latestBlockHeight, 
+        netGraph: netGraph, 
+        params: channelManagerConstructionParameters
+    )
+  }
+  ```
+  </template>
+
 </CodeSwitcher>
 
 **Implementation notes:** No methods should be called on `ChannelManager` until
@@ -589,7 +774,7 @@ generation is unique across restarts.
 
 **Example:**
 
-<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin'}">
+<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin', swift:'Swift'}">
   <template v-slot:rust>
   
   ```rust
@@ -711,6 +896,64 @@ generation is unique across restarts.
   ```
 
   </template>
+
+  <template v-slot:swift>
+
+  ```Swift
+  // Electrum/Esplora 
+    
+  // Retrieve transaction IDs to check the chain for un-confirmation.
+  let relevantTxIds1 = channelManager?.asConfirm().getRelevantTxids() ?? []
+  let relevantTxIds2 = chainMonitor?.asConfirm().getRelevantTxids() ?? []
+          
+  var relevantTxIds: [[UInt8]] = [[UInt8]]()
+  for tx in relevantTxIds1 {
+      relevantTxIds.append(tx.0)
+  }
+  for tx in relevantTxIds2 {
+      relevantTxIds.append(tx.0)
+  }
+
+  var unconfirmedTx: [[UInt8]] = // Insert code to find out from your chain source
+                                // if any of relevantTxIds have been reorged out
+                                // of the chain
+
+  for txid in unconfirmedTx {
+      channelManager.asConfirm().transactionUnconfirmed(txid: txid)
+      chainMonitor.asConfirm().transactionUnconfirmed(txid: txid)
+  }
+
+  // Retrieve transactions and outputs that were registered through the `Filter` interface.
+
+  var confirmedTx: [[UInt8]] = // Insert code to find out from your chain source
+                              // if any of the `Filter` txs/outputs were confirmed 
+                              // on-chain
+
+  for txid in confirmedTx {
+      let header: [UInt8] = // Insert code to fetch header
+      let height: UInt32 = // Insert code to fetch height of the header
+      let tx: [UInt8] = // Insert code to fetch tx
+      let txIndex: UInt = // Insert code to fetch tx index
+
+      var twoTuple: [(UInt, [UInt8])] = []
+      twoTuple.append((UInt, [UInt8])(txIndex, tx))
+      channelManager.asConfirm().transactionsConfirmed(header: header, txdata: twoTuple, height: height)
+      chainMonitor.asConfirm().transactionsConfirmed(header: header, txdata: twoTuple, height: height)
+  }
+
+  let bestHeader = // Insert code to fetch best header
+  let bestHeight = // Insert code to fetch best height
+          
+  channelManager.asConfirm().bestBlockUpdated(header: bestHeader, height: bestHeight)
+  chainMonitor.asConfirm().bestBlockUpdated(header: bestHeader, height: bestHeight)
+          
+  // Finally, tell LDK that chain sync is complete. This will also spawn several
+  // background threads to handle networking and event processing.
+  channelManagerConstructor.chainSyncCompleted(persister: channelManagerPersister)
+  ```
+
+  </template>
+
 </CodeSwitcher>
 
 **Implementation notes:**
@@ -752,7 +995,7 @@ Otherwise, you can use LDK's `Confirm` interface directly as in the examples abo
 
 **What it's used for:** generating routes to send payments over
 
-<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin'}">
+<CodeSwitcher :languages="{rust:'Rust', kotlin:'Kotlin', swift:'Swift'}">
 
 <template v-slot:rust>
 
@@ -778,6 +1021,22 @@ val genesisBlockHash : String = byteArrayToHex(genesisBlock.block_hash())
 val serializedNetworkGraph = // Read network graph bytes from file
 val networkGraph : NetworkGraph = NetworkGraph.read(serializedNetworkGraph, logger)
 val p2pGossip : P2PGossipSync = P2PGossipSync.of(networkGraph, Option_AccessZ.none(), logger)
+```
+
+</template>
+
+<template v-slot:swift>
+
+```Swift
+// If Network Graph exists, then read from disk
+let serializedNetworkGraph = // Read Network Graph bytes from file
+let readResult = NetworkGraph.read(ser: serializedNetworkGraph, arg: logger)
+if readResult.isOk() {
+  netGraph = readResult.getValue()!
+}
+
+// If Network Graph does not exist, create a new one
+netGraph = NetworkGraph(network: network, logger: logger)
 ```
 
 </template>
