@@ -1037,6 +1037,31 @@ if readResult.isOk() {
 
 // If Network Graph does not exist, create a new one
 netGraph = NetworkGraph(network: network, logger: logger)
+
+let rgs = RapidGossipSync(networkGraph: netGraph, logger: logger) // Initialise RGS
+if let lastSync = netGraph.getLastRapidGossipSyncTimestamp(), let snapshot = getSnapshot(lastSyncTimeStamp: lastSync) {
+  let timestampSeconds = UInt64(NSDate().timeIntervalSince1970)
+  let res = rgs.updateNetworkGraphNoStd(updateData: snapshot, currentTimeUnix: timestampSeconds)
+  if res.isOk() {
+    print("RGS updated")
+  }
+} else if let snapshot = getSnapshot(lastSyncTimeStamp: 0) { // Use lastSyncTimeStamp as 0 for first Sync
+  let timestampSeconds = UInt64(NSDate().timeIntervalSince1970)
+  let res = rgs.updateNetworkGraphNoStd(updateData: snapshot, currentTimeUnix: timestampSeconds)
+  if res.isOk() {
+    print("RGS initialized for the first time")
+  }
+}
+
+// Get current snapshot from the RGS Server
+func getSnapshot(lastSyncTimeStamp: UInt32) -> [UInt8]? {
+  let url: URL = URL(string: "https://rapidsync.lightningdevkit.org/snapshot/\(lastSyncTimeStamp)")! // Use LDK's RGS Server or use your own Server
+  let data = // Use the url to get the data
+  if let data = data {
+    return [UInt8](data)
+  }
+  return nil
+}
 ```
 
 </template>
