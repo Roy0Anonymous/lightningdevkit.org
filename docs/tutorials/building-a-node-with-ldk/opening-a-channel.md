@@ -276,19 +276,22 @@ object YourTxBroadcaster : BroadcasterInterface.BroadcasterInterfaceInterface {
 
 ```Swift
 // Using BDK (Bitcoin Dev Kit) to broadcast a transaction via the esplora client
+import BitcoinDevKit
+
 class MyBroacaster: BroadcasterInterface {
-    override func broadcastTransaction(tx: [UInt8]) {
+    override func broadcastTransactions(txs: [[UInt8]]) {
         let esploraURL = "esploraUrl"
-		let esploraConfig = EsploraConfig(baseUrl: esploraURL, proxy: nil, concurrency: 5, stopGap: 20, timeout: nil)
+        let esploraConfig = EsploraConfig(baseUrl: esploraURL, proxy: nil, concurrency: 5, stopGap: 20, timeout: nil)
         let blockchainConfig = BlockchainConfig.esplora(config: esploraConfig)
-		let blockchain = Blockchain(config: blockchainConfig)
-		
-		do {
-			let transaction = try Transaction(transactionBytes: tx)
-			try blockchain.broadcast(transaction: transaction)
-		} catch {
-			print("Failed to broadcast transaction: \(error.localizedDescription)")
-		}
+        do {
+            let blockchain = try Blockchain(config: blockchainConfig)
+            for tx in txs {
+                let transaction = try Transaction(transactionBytes: tx)
+                try blockchain.broadcast(transaction: transaction)
+            }
+        } catch {
+            print("Failed to broadcast transaction: \(error.localizedDescription)")
+        }
     }
 }
 ```
